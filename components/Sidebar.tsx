@@ -5,10 +5,21 @@ interface SidebarProps {
   partnerName: string;
   onImport: () => void;
   onAnalyze: () => void;
+  onClear: () => void;
   isAnalyzing: boolean;
+  mediaCount: number;
+  isPersistent: boolean;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ partnerName, onImport, onAnalyze, isAnalyzing }) => {
+const Sidebar: React.FC<SidebarProps> = ({ 
+  partnerName, 
+  onImport, 
+  onAnalyze, 
+  onClear,
+  isAnalyzing, 
+  mediaCount,
+  isPersistent 
+}) => {
   return (
     <div className="hidden md:flex w-[350px] lg:w-[400px] bg-[#111b21] border-r border-[#222d34] flex-col h-full overflow-hidden flex-shrink-0">
       {/* Sidebar Header */}
@@ -17,76 +28,89 @@ const Sidebar: React.FC<SidebarProps> = ({ partnerName, onImport, onAnalyze, isA
           <div className="w-10 h-10 rounded-full bg-[#6a7175] overflow-hidden flex items-center justify-center border border-white/5">
             <span className="text-lg">👤</span>
           </div>
+          <div className="flex flex-col">
+            <span className="text-[#e9edef] text-sm font-medium">Meu Perfil</span>
+            <span className="text-[10px] text-[#00a884] font-bold uppercase tracking-tighter">Cápsula Ativa</span>
+          </div>
         </div>
-        <div className="flex gap-4 text-[#aebac1]">
-          <button className="hover:text-white transition-colors">
-            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm0 18c-4.411 0-8-3.589-8-8s3.589-8 8-8 8 3.589 8 8-3.589 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/>
+        <div className="flex gap-2">
+           <button 
+            onClick={onClear}
+            className="p-2 text-[#8696a0] hover:text-red-400 transition-colors rounded-full hover:bg-white/5"
+            title="Limpar Memória"
+           >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
             </svg>
           </button>
         </div>
       </div>
 
-      {/* Search Section */}
-      <div className="p-2">
-        <div className="bg-[#202c33] flex items-center gap-4 px-4 py-2 rounded-lg">
-          <svg className="w-5 h-5 text-[#8696a0]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
-          <input 
-            type="text" 
-            placeholder="Pesquisar..." 
-            className="bg-transparent border-none focus:ring-0 text-[#d1d7db] text-sm w-full placeholder-[#8696a0]"
-          />
+      {/* Memory Status */}
+      <div className="px-4 py-3 bg-[#182229]/50 border-b border-white/5">
+        <div className="flex items-center justify-between mb-1">
+          <span className="text-[11px] text-[#8696a0] uppercase font-bold tracking-widest">Status da Memória</span>
+          {isPersistent ? (
+             <span className="flex items-center gap-1 text-[10px] text-[#00a884] font-bold">
+               <div className="w-1.5 h-1.5 bg-[#00a884] rounded-full animate-pulse" />
+               SALVO NO NAVEGADOR
+             </span>
+          ) : (
+             <span className="text-[10px] text-yellow-500 font-bold italic">NÃO SINCRONIZADO</span>
+          )}
         </div>
+        <p className="text-[12px] text-[#d1d7db] font-medium">
+          {mediaCount > 0 ? `${mediaCount.toLocaleString('pt-BR')} mídias eternizadas` : 'Nenhuma mídia carregada'}
+        </p>
       </div>
 
       {/* Chat List */}
       <div className="flex-1 overflow-y-auto">
-        <div className="bg-[#2a3942] p-3 flex gap-4 cursor-pointer hover:bg-[#202c33] transition-colors">
-          <div className="w-12 h-12 rounded-full bg-[#374151] flex-shrink-0 flex items-center justify-center overflow-hidden border border-white/5 shadow-sm">
-             <span className="text-white text-xl">❤️</span>
+        <div className="bg-[#2a3942] p-4 flex gap-4 cursor-pointer hover:bg-[#202c33] transition-all">
+          <div className="w-12 h-12 rounded-full bg-[#374151] flex-shrink-0 flex items-center justify-center overflow-hidden border border-white/5 shadow-lg ring-2 ring-[#00a884]/20">
+             <span className="text-white text-2xl">❤️</span>
           </div>
-          <div className="flex-1 border-b border-[#222d34] pb-2 overflow-hidden">
+          <div className="flex-1 border-b border-[#222d34] pb-3 overflow-hidden">
             <div className="flex justify-between items-center mb-1">
-              <span className="text-[#e9edef] font-medium">{partnerName}</span>
-              <span className="text-[12px] text-[#8197a4]">agora</span>
+              <span className="text-[#e9edef] font-bold text-[15px]">{partnerName}</span>
+              <span className="text-[11px] text-[#00a884] font-black">ONLINE</span>
             </div>
-            <p className="text-[#8696a0] text-sm truncate italic">Cápsula de memórias ativa...</p>
+            <p className="text-[#8696a0] text-sm truncate italic font-serif">"Onde nossas histórias vivem para sempre..."</p>
           </div>
         </div>
       </div>
 
       {/* Sidebar Footer Actions */}
-      <div className="p-4 border-t border-[#222d34] flex flex-col gap-3 bg-[#111b21]">
+      <div className="p-5 border-t border-[#222d34] flex flex-col gap-4 bg-[#111b21]">
         <button 
           onClick={onImport}
-          className="w-full bg-[#00a884] text-[#111b21] py-2.5 px-4 rounded-full font-bold hover:bg-[#06cf9c] transition-all flex items-center justify-center gap-2 shadow-lg active:scale-[0.98]"
+          className="w-full bg-[#00a884] text-[#111b21] py-3.5 px-4 rounded-xl font-black hover:bg-[#06cf9c] transition-all flex items-center justify-center gap-3 shadow-[0_4px_20px_rgba(0,168,132,0.3)] active:scale-[0.97]"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
           </svg>
-          Importar Chat (.txt)
+          Sincronizar Chat e Mídias
         </button>
         <button 
           onClick={onAnalyze}
-          disabled={isAnalyzing}
-          className="w-full bg-white/5 text-white py-2.5 px-4 rounded-full font-semibold hover:bg-white/10 border border-white/10 transition-all flex items-center justify-center gap-2 disabled:opacity-50 active:scale-[0.98]"
+          disabled={isAnalyzing || mediaCount === 0}
+          className="w-full bg-white/5 text-white py-3 px-4 rounded-xl font-bold hover:bg-white/10 border border-white/10 transition-all flex items-center justify-center gap-3 disabled:opacity-30 active:scale-[0.97]"
         >
           {isAnalyzing ? (
             <div className="flex items-center gap-2">
               <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-              <span>Analisando...</span>
+              <span>Lendo Estrelas...</span>
             </div>
           ) : (
             <>
-               <svg className="w-5 h-5 text-[#00a884]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
+               <span className="text-lg">✨</span>
               Insights da História
             </>
           )}
         </button>
+        <p className="text-[10px] text-[#8696a0] text-center italic opacity-50 px-4">
+          Privacidade garantida: seus dados nunca saem deste navegador.
+        </p>
       </div>
     </div>
   );

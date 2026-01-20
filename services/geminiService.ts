@@ -2,7 +2,8 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { Message } from "../types";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+// Fix: Always use named parameter and process.env.API_KEY directly as per SDK guidelines
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 export const analyzeChatHistory = async (messages: Message[]) => {
   // We take a sample of messages to avoid token limits while still getting the vibe
@@ -38,7 +39,8 @@ export const analyzeChatHistory = async (messages: Message[]) => {
   });
 
   try {
-    return JSON.parse(response.text);
+    // Access .text property directly (not a method)
+    return JSON.parse(response.text || '{}');
   } catch (e) {
     console.error("Failed to parse AI response", e);
     return null;
