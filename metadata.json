@@ -1,0 +1,8 @@
+{
+  "name": "ChatMemory: WhatsApp Time Capsule",
+  "description": "A beautiful digital memory vault that transforms your exported WhatsApp chat history into an interactive, AI-enhanced experience. Relive your favorite moments, analyze relationship stats, and preserve your digital legacy.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
