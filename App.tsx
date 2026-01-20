@@ -6,6 +6,7 @@ import { Message } from './types';
 import { parseWhatsAppExport } from './services/parser';
 import { analyzeChatHistory } from './services/geminiService';
 import { saveChatToDisk, saveMediaToDisk, loadChatFromDisk, clearAllData } from './services/storage';
+import { exportMemoryBackup, importMemoryBackup, downloadBackup } from './services/backup';
 
 const App: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -15,10 +16,24 @@ const App: React.FC = () => {
   const [isDragging, setIsDragging] = useState(false);
   const [isPersistent, setIsPersistent] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isImportingBackup, setIsImportingBackup] = useState(false);
   const [aiAnalysis, setAiAnalysis] = useState<any>(null);
   const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const folderInputRef = useRef<HTMLInputElement>(null);
+  const backupInputRef = useRef<HTMLInputElement>(null);
+  const fileInputId = 'file-upload';
+  const folderInputId = 'folder-upload';
+  const backupInputId = 'backup-upload';
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const hiddenInputStyle: React.CSSProperties = {
+    position: 'fixed',
+    top: '-1000px',
+    left: '-1000px',
+    width: '1px',
+    height: '1px',
+    opacity: 0,
+  };
 
   // Load persistent memory on mount
   useEffect(() => {
@@ -98,7 +113,40 @@ const App: React.FC = () => {
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) processFiles(e.target.files);
+    if (e.target.files) {
+      processFiles(e.target.files);
+    }
+    // Allow re-selecting the same files/folder in a single session
+    e.target.value = '';
+  };
+
+  const handleExportBackup = async () => {
+    const blob = await exportMemoryBackup();
+    if (!blob) {
+      alert('Nenhuma memória encontrada para exportar.');
+      return;
+    }
+    const filename = `chatmemory-backup-${new Date().toISOString().slice(0, 10)}.zip`;
+    downloadBackup(blob, filename);
+  };
+
+  const handleBackupImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsImportingBackup(true);
+    try {
+      const restored = await importMemoryBackup(file);
+      setMessages(restored.messages);
+      setPartnerName(restored.partnerName);
+      setMediaMap(restored.mediaMap);
+      setIsPersistent(true);
+    } catch (err) {
+      console.error('Backup import failed', err);
+      alert('Falha ao importar o backup. Verifique se o arquivo está correto.');
+    } finally {
+      setIsImportingBackup(false);
+      e.target.value = '';
+    }
   };
 
   const handleDrop = (e: React.DragEvent) => {
@@ -143,16 +191,49 @@ const App: React.FC = () => {
       )}
 
       <input 
+        id={fileInputId}
         type="file" 
         multiple
         ref={fileInputRef} 
         onChange={handleFileUpload} 
-        className="hidden"
+        style={hiddenInputStyle}
+        tabIndex={-1}
+        aria-hidden="true"
+      />
+      <input 
+        id={folderInputId}
+        type="file"
+        multiple
+        // @ts-expect-error - non-standard attribute supported by Chromium/WebKit
+        webkitdirectory="true"
+        // @ts-expect-error - non-standard attribute supported by Chromium/WebKit
+        directory="true"
+        // @ts-expect-error - non-standard attribute supported by Firefox
+        mozdirectory="true"
+        ref={folderInputRef}
+        onChange={handleFileUpload}
+        style={hiddenInputStyle}
+        tabIndex={-1}
+        aria-hidden="true"
+      />
+      <input 
+        id={backupInputId}
+        type="file"
+        accept=".zip,application/zip"
+        ref={backupInputRef}
+        onChange={handleBackupImport}
+        style={hiddenInputStyle}
+        tabIndex={-1}
+        aria-hidden="true"
       />
 
       <Sidebar 
         partnerName={partnerName} 
-        onImport={() => fileInputRef.current?.click()}
+        fileInputId={fileInputId}
+        folderInputId={folderInputId}
+        backupInputId={backupInputId}
+        onExportBackup={handleExportBackup}
+        isImportingBackup={isImportingBackup}
         onAnalyze={handleAiAnalysis}
         onClear={handleClearMemory}
         isAnalyzing={isAnalyzing}
@@ -195,12 +276,43 @@ const App: React.FC = () => {
               <p className="max-w-md text-[#8696a0] leading-relaxed mb-10 text-xl font-light">
                 Arraste suas mensagens e todas as <strong>{mediaMap.size || '1000+'}</strong> mídias aqui para que elas nunca sejam esquecidas.
               </p>
-              <button 
-                onClick={() => fileInputRef.current?.click()}
-                className="bg-[#00a884] text-[#111b21] px-14 py-5 rounded-2xl font-black text-xl hover:bg-[#06cf9c] hover:scale-105 active:scale-95 transition-all shadow-2xl ring-4 ring-[#00a884]/20 uppercase tracking-widest"
+              <label 
+                htmlFor={folderInputId}
+                role="button"
+                tabIndex={0}
+                className="bg-[#00a884] text-[#111b21] px-14 py-5 rounded-2xl font-black text-xl hover:bg-[#06cf9c] hover:scale-105 active:scale-95 transition-all shadow-2xl ring-4 ring-[#00a884]/20 uppercase tracking-widest cursor-pointer"
               >
-                Eternizar Minha História
-              </button>
+                Importar Pasta Completa
+              </label>
+              <label 
+                htmlFor={fileInputId}
+                role="button"
+                tabIndex={0}
+                className="mt-4 text-[#00a884] text-xs font-black uppercase tracking-widest hover:text-[#06cf9c] transition-colors cursor-pointer"
+              >
+                ou selecionar arquivos manualmente
+              </label>
+              <div className="mt-10 flex flex-col items-center gap-3">
+                <button
+                  onClick={handleExportBackup}
+                  className="text-[11px] font-black uppercase tracking-[0.3em] text-white/80 hover:text-white transition-colors"
+                >
+                  Salvar Backup da Memória
+                </button>
+                <label
+                  htmlFor={backupInputId}
+                  role="button"
+                  tabIndex={0}
+                  className="text-[10px] font-black uppercase tracking-[0.25em] text-[#00a884] hover:text-[#06cf9c] transition-colors cursor-pointer"
+                >
+                  Restaurar Backup
+                </label>
+                {isImportingBackup && (
+                  <span className="text-[10px] text-[#8696a0] uppercase tracking-[0.2em]">
+                    Importando...
+                  </span>
+                )}
+              </div>
             </div>
           ) : (
             <div className="flex flex-col min-w-0 w-full">

@@ -4,10 +4,15 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, '.', '');
+    const mediaDir = env.VITE_MEDIA_DIR ? path.resolve(env.VITE_MEDIA_DIR) : undefined;
     return {
+      base: './',
       server: {
         port: 3000,
         host: '0.0.0.0',
+        fs: {
+          allow: mediaDir ? [process.cwd(), mediaDir] : [process.cwd()],
+        },
       },
       plugins: [react()],
       define: {

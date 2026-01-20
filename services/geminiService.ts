@@ -2,17 +2,34 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { Message } from "../types";
 
-// Fix: Always use named parameter and process.env.API_KEY directly as per SDK guidelines
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+const getApiKey = () =>
+  import.meta.env.VITE_GEMINI_API_KEY ||
+  import.meta.env.VITE_API_KEY ||
+  "";
+
+let ai: GoogleGenAI | null = null;
+
+const getAiClient = () => {
+  if (ai) return ai;
+  const apiKey = getApiKey();
+  if (!apiKey) return null;
+  ai = new GoogleGenAI({ apiKey });
+  return ai;
+};
 
 export const analyzeChatHistory = async (messages: Message[]) => {
+  const client = getAiClient();
+  if (!client) {
+    console.warn("Gemini API key missing. Set VITE_GEMINI_API_KEY to enable insights.");
+    return null;
+  }
   // We take a sample of messages to avoid token limits while still getting the vibe
   const sample = messages
     .slice(-100)
     .map(m => `${m.sender}: ${m.content}`)
     .join('\n');
 
-  const response = await ai.models.generateContent({
+  const response = await client.models.generateContent({
     model: 'gemini-3-flash-preview',
     contents: `Analyze this chat history between two lovers and provide a JSON summary.
     Chat sample:

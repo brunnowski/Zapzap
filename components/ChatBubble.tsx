@@ -9,6 +9,20 @@ interface ChatBubbleProps {
   mediaMap: Map<string, File>;
 }
 
+const MEDIA_DIR = import.meta.env.VITE_MEDIA_DIR || '';
+
+const getMediaUrl = (filename: string, mediaMap: Map<string, File>): string | null => {
+  const mediaFile = mediaMap.get(filename);
+  if (mediaFile) {
+    return URL.createObjectURL(mediaFile);
+  }
+
+  if (!MEDIA_DIR) return null;
+  const normalizedDir = MEDIA_DIR.replace(/\/$/, '');
+  const fullPath = `${normalizedDir}/${filename}`;
+  return encodeURI(`/@fs/${fullPath}`);
+};
+
 const ChatBubble: React.FC<ChatBubbleProps> = ({ message, onClick, mediaMap }) => {
   const isMe = message.isMe;
 
@@ -25,8 +39,12 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({ message, onClick, mediaMap }) =
 
   const renderMedia = (content: string) => {
     const filename = extractFilename(content);
+    const mediaUrl =
+      filename
+        ? getMediaUrl(filename, mediaMap) ||
+          `${import.meta.env.BASE_URL}media/${encodeURIComponent(filename)}`
+        : null;
     const mediaFile = filename ? mediaMap.get(filename) : null;
-    const mediaUrl = mediaFile ? URL.createObjectURL(mediaFile) : null;
 
     const isAudio = content.toUpperCase().includes('AUDIO') || (filename?.endsWith('.opus'));
     const isPhoto = content.toUpperCase().includes('PHOTO') || (filename?.match(/\.(jpg|jpeg|png|webp)$/i));

@@ -3,7 +3,11 @@ import React from 'react';
 
 interface SidebarProps {
   partnerName: string;
-  onImport: () => void;
+  fileInputId: string;
+  folderInputId: string;
+  backupInputId: string;
+  onExportBackup: () => void;
+  isImportingBackup: boolean;
   onAnalyze: () => void;
   onClear: () => void;
   isAnalyzing: boolean;
@@ -13,7 +17,11 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ 
   partnerName, 
-  onImport, 
+  fileInputId,
+  folderInputId,
+  backupInputId,
+  onExportBackup,
+  isImportingBackup,
   onAnalyze, 
   onClear,
   isAnalyzing, 
@@ -82,15 +90,28 @@ const Sidebar: React.FC<SidebarProps> = ({
 
       {/* Sidebar Footer Actions */}
       <div className="p-5 border-t border-[#222d34] flex flex-col gap-4 bg-[#111b21]">
-        <button 
-          onClick={onImport}
-          className="w-full bg-[#00a884] text-[#111b21] py-3.5 px-4 rounded-xl font-black hover:bg-[#06cf9c] transition-all flex items-center justify-center gap-3 shadow-[0_4px_20px_rgba(0,168,132,0.3)] active:scale-[0.97]"
+        <label 
+          htmlFor={folderInputId}
+          role="button"
+          tabIndex={0}
+          className="w-full bg-[#00a884] text-[#111b21] py-3.5 px-4 rounded-xl font-black hover:bg-[#06cf9c] transition-all flex items-center justify-center gap-3 shadow-[0_4px_20px_rgba(0,168,132,0.3)] active:scale-[0.97] cursor-pointer"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v7a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" />
+          </svg>
+          Importar Pasta Completa
+        </label>
+        <label 
+          htmlFor={fileInputId}
+          role="button"
+          tabIndex={0}
+          className="w-full bg-white/5 text-white py-2.5 px-4 rounded-xl font-bold hover:bg-white/10 border border-white/10 transition-all flex items-center justify-center gap-3 active:scale-[0.97] cursor-pointer"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
           </svg>
-          Sincronizar Chat e Mídias
-        </button>
+          Selecionar Arquivos
+        </label>
         <button 
           onClick={onAnalyze}
           disabled={isAnalyzing || mediaCount === 0}
@@ -108,6 +129,27 @@ const Sidebar: React.FC<SidebarProps> = ({
             </>
           )}
         </button>
+        <div className="flex flex-col items-center gap-2">
+          <button
+            onClick={onExportBackup}
+            className="text-[10px] font-black uppercase tracking-[0.3em] text-white/80 hover:text-white transition-colors"
+          >
+            Salvar Backup
+          </button>
+          <label
+            htmlFor={backupInputId}
+            role="button"
+            tabIndex={0}
+            className="text-[10px] font-black uppercase tracking-[0.25em] text-[#00a884] hover:text-[#06cf9c] transition-colors cursor-pointer"
+          >
+            Restaurar Backup
+          </label>
+          {isImportingBackup && (
+            <span className="text-[10px] text-[#8696a0] uppercase tracking-[0.2em]">
+              Importando...
+            </span>
+          )}
+        </div>
         <p className="text-[10px] text-[#8696a0] text-center italic opacity-50 px-4">
           Privacidade garantida: seus dados nunca saem deste navegador.
         </p>
