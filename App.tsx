@@ -35,6 +35,30 @@ const App: React.FC = () => {
     opacity: 0,
   };
 
+  const loadDefaultChat = async () => {
+    const fallbackPath = 'media/chat.txt';
+    const rawPath = (import.meta.env.VITE_DEFAULT_CHAT_TXT || fallbackPath).replace(/^\//, '');
+    const url = `${import.meta.env.BASE_URL}${rawPath}`;
+    try {
+      const response = await fetch(url);
+      if (!response.ok) return null;
+      const text = await response.text();
+      const myName = "Raquel";
+      const parsedMessages = parseWhatsAppExport(text, myName);
+      if (parsedMessages.length === 0) return null;
+      const otherSender = parsedMessages.find(m => !m.isMe && m.sender !== 'System')?.sender;
+      const detectedName = otherSender?.toLowerCase().includes('brunno') ? 'Brunno Rossetti' : (otherSender || partnerName);
+      setMessages(parsedMessages);
+      setPartnerName(detectedName);
+      await saveChatToDisk(parsedMessages, detectedName);
+      setIsPersistent(true);
+      return true;
+    } catch (err) {
+      console.warn('Default chat not found', err);
+      return null;
+    }
+  };
+
   // Load persistent memory on mount
   useEffect(() => {
     const initMemory = async () => {
@@ -45,6 +69,8 @@ const App: React.FC = () => {
           setPartnerName(stored.partnerName);
           setMediaMap(stored.mediaMap);
           setIsPersistent(true);
+        } else {
+          await loadDefaultChat();
         }
       } catch (err) {
         console.error("Failed to load digital memory", err);
