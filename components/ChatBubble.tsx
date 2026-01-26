@@ -10,6 +10,7 @@ interface ChatBubbleProps {
 }
 
 const MEDIA_DIR = import.meta.env.VITE_MEDIA_DIR || '';
+const MEDIA_BASE_URL = import.meta.env.VITE_MEDIA_BASE_URL || '';
 
 const getMediaUrl = (filename: string, mediaMap: Map<string, File>): string | null => {
   const mediaFile = mediaMap.get(filename);
@@ -17,10 +18,18 @@ const getMediaUrl = (filename: string, mediaMap: Map<string, File>): string | nu
     return URL.createObjectURL(mediaFile);
   }
 
-  if (!MEDIA_DIR) return null;
-  const normalizedDir = MEDIA_DIR.replace(/\/$/, '');
-  const fullPath = `${normalizedDir}/${filename}`;
-  return encodeURI(`/@fs/${fullPath}`);
+  if (MEDIA_DIR) {
+    const normalizedDir = MEDIA_DIR.replace(/\/$/, '');
+    const fullPath = `${normalizedDir}/${filename}`;
+    return encodeURI(`/@fs/${fullPath}`);
+  }
+
+  if (MEDIA_BASE_URL) {
+    const normalizedBase = MEDIA_BASE_URL.replace(/\/$/, '');
+    return `${normalizedBase}/${encodeURIComponent(filename)}`;
+  }
+
+  return null;
 };
 
 const ChatBubble: React.FC<ChatBubbleProps> = ({ message, onClick, mediaMap }) => {

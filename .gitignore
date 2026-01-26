@@ -1,3 +1,5 @@
+/public/media/*
+!/public/media/chat.txt
 # Logs
 logs
 *.log
