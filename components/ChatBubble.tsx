@@ -1,5 +1,5 @@
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Message } from '../types';
 import { extractFilename } from '../services/parser';
 
@@ -34,6 +34,14 @@ const getMediaUrl = (filename: string, mediaMap: Map<string, File>): string | nu
 
 const ChatBubble: React.FC<ChatBubbleProps> = ({ message, onClick, mediaMap }) => {
   const isMe = message.isMe;
+  const [isMediaLoaded, setIsMediaLoaded] = useState(false);
+
+  const filename = extractFilename(message.content);
+  const isAudio = message.content.toUpperCase().includes('AUDIO') || (filename?.endsWith('.opus'));
+  const isPhoto = message.content.toUpperCase().includes('PHOTO') || (filename?.match(/\.(jpg|jpeg|png|webp)$/i));
+  const isVideo = message.content.toUpperCase().includes('VIDEO') || (filename?.match(/\.(mp4|mov)$/i));
+  const isSticker = message.content.toUpperCase().includes('STICKER') || (filename?.endsWith('.webp') && message.content.includes('STICKER'));
+  const isDeferredMedia = Boolean(filename && (isPhoto || isVideo));
 
   // Render system messages
   if (message.type === 'system' || message.content.includes('criptografia') || message.content.includes('código de segurança')) {
@@ -47,18 +55,29 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({ message, onClick, mediaMap }) =
   }
 
   const renderMedia = (content: string) => {
-    const filename = extractFilename(content);
     const mediaUrl =
-      filename
+      filename && (!isDeferredMedia || isMediaLoaded)
         ? getMediaUrl(filename, mediaMap) ||
           `${import.meta.env.BASE_URL}media/${encodeURIComponent(filename)}`
         : null;
     const mediaFile = filename ? mediaMap.get(filename) : null;
 
-    const isAudio = content.toUpperCase().includes('AUDIO') || (filename?.endsWith('.opus'));
-    const isPhoto = content.toUpperCase().includes('PHOTO') || (filename?.match(/\.(jpg|jpeg|png|webp)$/i));
-    const isVideo = content.toUpperCase().includes('VIDEO') || (filename?.match(/\.(mp4|mov)$/i));
-    const isSticker = content.toUpperCase().includes('STICKER') || (filename?.endsWith('.webp') && content.includes('STICKER'));
+    if (isDeferredMedia && !isMediaLoaded) {
+      return (
+        <div className="flex items-center gap-3 text-[#8696a0] italic py-2 pr-4">
+          <div className="bg-black/20 p-2.5 rounded-xl border border-white/5">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7h18M3 12h18M3 17h18" />
+            </svg>
+          </div>
+          <div className="flex flex-col">
+            <span className="text-[13.5px] font-medium">Mídia não carregada</span>
+            <span className="text-[10px] opacity-60">Clique para carregar</span>
+            {filename && <span className="text-[10px] opacity-60 truncate max-w-[180px]">{filename}</span>}
+          </div>
+        </div>
+      );
+    }
 
     if (isAudio && mediaUrl) {
       return (
@@ -161,7 +180,13 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({ message, onClick, mediaMap }) =
   return (
     <div className={`flex w-full mb-1 transition-all animate-in fade-in slide-in-from-bottom-1 duration-500 ${isMe ? 'justify-end' : 'justify-start'}`}>
       <div 
-        onClick={() => onClick(message)}
+        onClick={() => {
+          if (isDeferredMedia && !isMediaLoaded) {
+            setIsMediaLoaded(true);
+            return;
+          }
+          onClick(message);
+        }}
         className={`max-w-[85%] md:max-w-[70%] lg:max-w-[65%] xl:max-w-[60%] rounded-lg px-2.5 py-1.5 shadow-sm relative cursor-pointer select-none ${
           isMe 
             ? 'bg-[#005c4b] text-[#e9edef] rounded-tr-none' 

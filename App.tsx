@@ -1,6 +1,5 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import Sidebar from './components/Sidebar';
 import ChatBubble from './components/ChatBubble';
 import { Message } from './types';
 import { parseWhatsAppExport } from './services/parser';
@@ -17,6 +16,8 @@ const App: React.FC = () => {
   const [isPersistent, setIsPersistent] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isImportingBackup, setIsImportingBackup] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(200);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [aiAnalysis, setAiAnalysis] = useState<any>(null);
   const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -83,12 +84,22 @@ const App: React.FC = () => {
 
   useEffect(() => {
     if (messages.length > 0 && !isLoading) {
-      const timer = setTimeout(() => {
-        chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-      }, 300);
+      if (!isLoadingMore) {
+        const timer = setTimeout(() => {
+          chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        }, 300);
+        return () => clearTimeout(timer);
+      }
+      setIsLoadingMore(false);
       return () => clearTimeout(timer);
     }
   }, [messages, isLoading]);
+
+  useEffect(() => {
+    if (messages.length > 0) {
+      setVisibleCount(Math.min(200, messages.length));
+    }
+  }, [messages.length]);
 
   const processFiles = async (files: FileList | File[]) => {
     const fileArray = Array.from(files);
@@ -198,6 +209,8 @@ const App: React.FC = () => {
     );
   }
 
+  const visibleMessages = messages.slice(-visibleCount);
+
   return (
     <div 
       className="flex h-screen w-screen bg-[#0b141a] overflow-hidden text-[#d1d7db] relative font-sans select-none"
@@ -251,20 +264,6 @@ const App: React.FC = () => {
         style={hiddenInputStyle}
         tabIndex={-1}
         aria-hidden="true"
-      />
-
-      <Sidebar 
-        partnerName={partnerName} 
-        fileInputId={fileInputId}
-        folderInputId={folderInputId}
-        backupInputId={backupInputId}
-        onExportBackup={handleExportBackup}
-        isImportingBackup={isImportingBackup}
-        onAnalyze={handleAiAnalysis}
-        onClear={handleClearMemory}
-        isAnalyzing={isAnalyzing}
-        mediaCount={mediaMap.size}
-        isPersistent={isPersistent}
       />
 
       <main className="flex-1 flex flex-col relative bg-[#0b141a] min-w-0 h-full">
@@ -345,9 +344,22 @@ const App: React.FC = () => {
               <div className="mx-auto bg-[#182229] text-[#8696a0] text-[10px] py-2.5 px-6 rounded-full uppercase tracking-[0.3em] mb-12 shadow-md border border-white/5 text-center mt-6 font-black">
                 {isPersistent ? 'Memória Sincronizada com o Navegador' : 'Memória Temporária (Sincronize para Salvar)'}
               </div>
-              {messages.map((msg, idx) => {
+              {visibleCount < messages.length && (
+                <div className="flex justify-center mb-6">
+                  <button
+                    onClick={() => {
+                      setIsLoadingMore(true);
+                      setVisibleCount(prev => Math.min(prev + 200, messages.length));
+                    }}
+                    className="bg-white/5 text-white px-6 py-2 rounded-full text-[11px] font-bold uppercase tracking-widest border border-white/10 hover:bg-white/10 transition"
+                  >
+                    Carregar mais mensagens
+                  </button>
+                </div>
+              )}
+              {visibleMessages.map((msg, idx) => {
                 const showDate = idx === 0 || 
-                  messages[idx-1].timestamp.toDateString() !== msg.timestamp.toDateString();
+                  visibleMessages[idx-1].timestamp.toDateString() !== msg.timestamp.toDateString();
                 
                 return (
                   <React.Fragment key={msg.id}>
