@@ -209,7 +209,9 @@ const App: React.FC = () => {
     );
   }
 
-  const visibleMessages = messages.slice(-visibleCount);
+  const visibleMessages = [...messages]
+    .sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime())
+    .slice(-visibleCount);
 
   return (
     <div 
